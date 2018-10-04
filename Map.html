@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Map</title>
+	<link rel="stylesheet" type="text/css" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/nihilo/nihilo.css">
+	<link rel="stylesheet" type="text/css" href="http://js.arcgis.com/3.9/js/esri/css/esri.css">
+	<script type="text/javascript" src="http://js.arcgis.com/3.9/init.js"></script>
+
+	<style> 
+		html,body
+		{
+			overflow: hidden;
+			padding: 0;
+			margin: 0;
+		}
+		.MAPDIV
+		{ 
+			position: absolute;  
+			width: 100%; 
+			height: 100%; 
+			z-index: 1;
+		} 
+		.accordion
+		{
+			position: absolute;
+			background-color: rgba(254,254,254,0);
+			width: 300px;
+			height: 300px;
+			float: right;
+			top: 720px;
+            right: 10px;
+			z-index: 2;
+		}
+		.tools
+		{
+			position: absolute;
+			width: 40px;
+			height: 212.5px;
+			top: 260px;
+			left: 18px;
+			background-color: rgba(254,254,254,0);
+			z-index: 2;
+		}
+        .btn
+        {
+            width: 100px;
+        }
+	</style>
+
+	<script type="text/javascript"> dojoConfig = { isDebug: true, async: true };</script>
+
+	<script type="text/javascript">
+        var map, navToolbar;
+        var navOption;
+        require
+        ([
+        	"dojo/parser",//解析组建
+         	"esri/map", //地图
+        	"esri/layers/ArcGISTiledMapServiceLayer",//切片图层
+        	"esri/toolbars/navigation",//图层控制
+        	"esri/dijit/OverviewMap",//鹰眼
+        	"dojo/query", //查询
+        	'dojo/_base/fx',
+      		"dojo/fx/easing",
+      		"esri/toolbars/draw",//绘图
+            "esri/symbols/SimpleMarkerSymbol",//简单点符号
+            "esri/symbols/SimpleLineSymbol",//简单线符号
+            "esri/symbols/PictureFillSymbol",//填充符号
+            "esri/symbols/CartographicLineSymbol",//线封闭填充
+            "esri/graphic",//图像
+            "esri/Color",
+            "dojo/dom",
+            "dojo/on",
+            "esri/dijit/Measurement",
+            "esri/SnappingManager",//测量
+            "esri/dijit/Scalebar",
+            "esri/layers/FeatureLayer",
+            "esri/geometry/Extent",
+            "esri/symbols/SimpleFillSymbol",//简单填充符号
+            "dojo/colors",
+            "esri/renderers/SimpleRenderer",
+            "esri/dijit/Scalebar",//地点
+            "esri/dijit/Bookmarks",
+            "esri/dijit/BookmarkItem",
+        	"dijit/layout/BorderContainer",//界面
+        	"dijit/layout/ContentPane",
+        	"dijit/layout/AccordionContainer",
+        	"dojo/domReady!"],
+            function (
+            	parser, 
+            	Map, 
+            	ArcGISTiledMapServiceLayer, 
+            	Navigation,
+            	OverviewMap,  
+            	query, 
+            	fx, 
+            	easing,
+            	Draw,
+                SimpleMarkerSymbol,
+                SimpleLineSymbol,
+                PictureFillSymbol,
+                CartographicLineSymbol,
+                Graphic,
+                Color,
+                dom,
+                on,
+                Measurement,
+                SnappingManager,
+                Scalebar,
+                FeatureLayer,
+                Extent,
+                SimpleFillSymbol,
+                Color,
+                SimpleRenderer,
+                Scalebar,
+                Bookmarks,
+                BookmarkItem) {
+                parser.parse();
+                map = new Map("mapDiv", { logo: false, sliderStyle: "large",zoom:2,center:[260,40] });
+                var agoServiceURL = "http://server.arcgisonline.com/ArcGIS/rest/services/ESRI_StreetMap_World_2D/MapServer" ;
+                var agoLayer = new ArcGISTiledMapServiceLayer(agoServiceURL);
+                map.addLayer(agoLayer);
+                
+                map.on('load', setupNavBar);
+                function setupNavBar() 
+                {
+                    navToolbar = new Navigation(map);
+                    query(".navItem img").onmouseover(function (evt) 
+                    {
+                    	fx.anim(evt.target.parentNode,{ backgroundColor: '#CCCCCC' }, 200, easing.bounceOut );
+                    }).onmouseout(function (evt) 
+                    {
+                        if (evt.target.parentNode.id != navOption) 
+                        {
+                            fx.anim(evt.target.parentNode, { backgroundColor: '#FFFFFF' });
+                        }
+                        else 
+                        {
+                            fx.anim(evt.target.parentNode, { backgroundColor: '#DADADA'});
+                        }
+                        }).onclick(
+                        function (evt) 
+                        {
+                            fx.anim
+                            (
+                                evt.target.parentNode, 
+                                { backgroundColor: '#707070'}, 
+                                200, 
+                                easing.linear,
+                                function () { dojo.anim(evt.target.parentNode, {backgroundColor: '#CCCCCC'}, 0);}
+                            );
+                            navEvent(evt.target.parentNode.id);
+                        });
+                    navEvent('deactivate');
+                }
+                function navEvent(id) 
+                {
+                    switch (id) 
+                    {
+                        case 'pan':
+                            map.enablePan();
+                            navToolbar.activate(Navigation.PAN);
+                            if (navOption)
+                            {
+                                fx.anim(document.getElementById(navOption), { backgroundColor: '#FFFFFF' });
+                            }
+                            navOption = id;
+                            break;
+                        case 'zoomprev':
+                            navToolbar.zoomToPrevExtent();
+                            break;
+                        case 'zoomnext':
+                            navToolbar.zoomToNextExtent();
+                            break;
+                        case 'extent':
+                            navToolbar.zoomToFullExtent();
+                            break;
+                        case 'zoomin':
+                            navToolbar.activate(Navigation.ZOOM_IN);
+                            if (navOption) 
+                            {
+                                fx.anim(document.getElementById(navOption), { backgroundColor: '#FFFFFF' });
+                            }
+                            navOption = id;
+                            break;
+                        case 'zoomout':
+                            navToolbar.activate(Navigation.ZOOM_OUT);
+                            if (navOption) 
+                            {
+                                fx.anim(document.getElementById(navOption), { backgroundColor: '#FFFFFF' });
+                            }
+                            navOption = id;
+                            break;
+                        case 'deactivate':
+                            navToolbar.deactivate();
+                            if (navOption) 
+                            {
+                                fx.anim(document.getElementById(navOption), { backgroundColor: '#FFFFFF' });
+                            }
+                            navOption = id;
+                            break;
+                        case 'Hawkeye':
+                        	var Hawkeye = dojo.byId("Hawkeye");
+                    		dojo.connect(Hawkeye, "click", function (evt) 
+                    		{
+                        	var overviewMap = new esri.dijit.OverviewMap
+                            ({
+                                map: map,
+                                visible: true,
+                                opacity:0.2
+                            });
+                        	overviewMap.startup();
+                    		});
+                    		break;
+                    }
+                }
+
+                //绘图
+                map.on("load", initToolbar);
+                var markerSymbol = new SimpleMarkerSymbol();
+                markerSymbol.setColor(new Color("rgb(253, 84, 78)"));
+                var lineSymbol = new CartographicLineSymbol
+                (
+                        CartographicLineSymbol.STYLE_SOLID,
+                        new Color([253, 84, 78]),
+                        7,
+                        CartographicLineSymbol.CAP_ROUND,
+                        CartographicLineSymbol.JOIN_MITER,
+                        3
+                );
+
+                var fillSymbol = new PictureFillSymbol
+                (
+                        SimpleFillSymbol.STYLE_SOLID,  
+                        new SimpleLineSymbol
+                        (  
+                            SimpleLineSymbol.STYLE_SOLID,  
+                            new Color([255,0,0,0.65]), 
+                            2  
+                        ),  
+                        new Color([255,0,0,0.35])
+                );
+
+                function initToolbar() 
+                {
+                    tb = new Draw(map);
+                    tb.on("draw-end", addGraphic);
+                    on(
+                            dom.byId("info"), "click",
+                            function (evt) 
+                            {
+                                if (evt.target.id === "info")
+                                {
+                                    return;
+                                }
+                                var tool = evt.target.id.toLowerCase();
+                                map.disableMapNavigation();
+                                tb.activate(tool);
+                            }
+                        );
+                }
+
+                function addGraphic(evt)
+                 {
+                    tb.deactivate();
+                    map.enableMapNavigation();
+                    var symbol;
+                    if (evt.geometry.type === "point" || evt.geometry.type === "multipoint") 
+                    {
+                        symbol = markerSymbol;
+                    }
+                    else if (evt.geometry.type === "line" || evt.geometry.type === "polyline") 
+                    {
+                        symbol = lineSymbol;
+                    }
+                    else 
+                    {
+                        symbol = fillSymbol;
+                    }
+                    map.graphics.add(new Graphic(evt.geometry, symbol));
+                }
+                //测量
+                
+
+                var sfs = new esri.symbol.SimpleFillSymbol
+                (
+                    esri.symbol.SimpleFillSymbol.STYLE_SOLID,
+                    new esri.symbol.SimpleLineSymbol
+                    (
+                        esri.symbol.SimpleLineSymbol.STYLE_SOLID,
+                        new dojo.Color([195, 176, 23]),
+                        2
+                    ),
+                    null
+                );
+
+                var parcelsLayer = new FeatureLayer
+                (
+                    "http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Louisville/LOJIC_LandRecords_Louisville/MapServer/0",
+                    {mode: FeatureLayer.MODE_ONDEMAND,outFields: ["*"]}
+                );
+                parcelsLayer.setRenderer(new esri.renderer.SimpleRenderer(sfs));
+                dojo.connect
+                (
+                    map, "onLayersAddResult", function (results) 
+                    {
+                        var snapManager = map.enableSnapping
+                        (
+                            {snapKey: dojo.keys.copyKey}
+                        );
+                        var layerInfos = [{ layer: parcelsLayer }];
+                        snapManager.setLayerInfos(layerInfos);
+                        var measurement = new Measurement
+                        (
+                            { map: map },
+                            dojo.byId('measurementDiv')
+                        );
+                            measurement.startup();
+                    }
+                );
+                    map.addLayers([parcelsLayer]);
+
+                //地点
+                var div1 = dojo.byId("div1");
+                var div2 = dojo.byId("div2");
+                dojo.connect
+                (
+                    map, "onMouseMove", function (e) 
+                    {
+                        var mp = e.mapPoint;
+                        var sp = e.screenPoint;
+                        div1.innerHTML = mp.x + "/" + sp.x;
+                        div2.innerHTML = mp.y + "/" + sp.y;
+                    }
+                );
+                var scalebar = new Scalebar
+                (
+                    {
+                        map: map,
+                        scalebarUnit: "dual"
+                    }, 
+                    dojo.byId("scalebardiv")
+                );
+                Books = new Bookmarks
+                (
+                    {map: map,editable: "true"}, 
+                    dojo.byId("bookmarks")
+                );
+                dojo.connect(button1, "click", addBook);
+                function addBook() 
+                {
+                    var bookextent = map.extent;
+                    var bookmarkItem = new BookmarkItem
+                    ({
+                        "extent": bookextent,
+                        "name": "我的地点"
+                    });
+                    Books.addBookmark(bookmarkItem);
+                }
+            }
+        );
+    </script>
+</head>
+<body class="nihilo">
+	<div class="logo">
+	</div>
+		<div class="tools">
+			<div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'left'" style="background-color: rgba(254,254,254,0.1); width: 40px;"> 
+		
+			<div id="zoomin" data-dojo-type="dijit/layout/ContentPane" class="navItem" data-dojo-props="splitter:'false'" style="height: 30px;  padding: 5px; margin-bottom: 3px; vertical-align: middle; overflow: hidden;">
+                <img class="navItem" src="icons/zoomin.png" title="放大" style="height: 30px;width: 30px"/>
+            </div>
+
+            <div id="zoomout" data-dojo-type="dijit/layout/ContentPane" class="navItem" data-dojo-props="splitter:'false'" style="height: 30px;  padding: 5px; margin-bottom: 3px; vertical-align: middle; overflow: hidden;">
+                <img class="navItem" src="icons/zoomout.png" title="缩小" style="height: 30px;width: 30px"/>
+            </div>
+
+            <div id="extent" data-dojo-type="dijit/layout/ContentPane" class="navItem" data-dojo-props="splitter:'false'" style="height: 30px; padding: 5px; margin-bottom: 3px; vertical-align: middle; overflow: hidden;">
+                <img class="navItem" src="icons/extent.png" title="返回全图" style="height: 30px;width: 30px"/>
+            </div>
+
+            <div id="Hawkeye" data-dojo-type="dijit/layout/ContentPane" class="navItem" data-dojo-props="splitter:'false'" style="height:30px;padding:5px;margin-bottom:3px;vertical-align:middle;overflow:hidden;">
+                <img class="navItem" src="icons/Hawkeye.png" title="鹰眼"style="height: 30px;width: 30px"/>
+            </div>
+
+            <div id="deactivate" data-dojo-type="dijit/layout/ContentPane" class="navItem" data-dojo-props="splitter:'false'" style="height: 30px; padding: 5px; margin-bottom: 3px; vertical-align: middle; overflow: hidden;">
+                <img class="navItem" src="icons/minus.png" title="返回标准控制" style="height: 30px;width: 30px"/>
+            </div>
+		</div>
+		</div>
+		
+		<div id="mapDiv" class="MAPDIV" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center',design:'headline',gutters:false" style="background-color: rgb(254,254,254); padding: 0px;"> 
+		</div>
+
+		<div class="accordion">
+            <div id="accordionContainer" data-dojo-type="dijit/layout/AccordionContainer" style="padding: 0px; overflow: hidden; z-index: 29;">
+                    <div data-dojo-type="dijit/layout/ContentPane" title="绘图" style="overflow: hidden;">
+                        <div id="info">
+                            <div></div>
+                                <button id="Point" class="btn">点</button>
+                                <button id="Multipoint" class="btn">多点</button><br>
+                                <button id="Line" class="btn">线</button>
+                                <button id="Polyline" class="btn">多段线</button><br>
+                                <button id="FreehandPolyline" class="btn">徒手线</button>
+                                <button id="Triangle" class="btn">三角形</button><br>
+                                <button id="Extent" class="btn">矩形</button>
+                                <button id="Circle" class="btn">圆</button><br>
+                                <button id="Ellipse" class="btn">椭圆</button>
+                                <button id="Polygon" class="btn">面</button><br>
+                                <button id="FreehandPolygon" class="btn">徒手多边形</button>
+                        </div>
+                    </div>
+                    
+                    <div id="identifyResultsPane" data-dojo-type="dijit/layout/ContentPane" style="overflow: hidden;" title="测量">
+                        <div id="titlePane" data-dojo-type="dijit/TitlePane" data-dojo-props="title:'测量工具', closable:'false', open:'false'">
+                            <div id="measurementDiv"></div>
+                            
+                        </div>
+                    </div>
+
+                    <div id="bookmarks" data-dojo-type="dijit/layout/ContentPane" style="overflow: hidden;" title="保存的地点">
+                            <div id="div1"></div>
+                            <div id="div2"></div>
+                            <table>
+                            <tr>
+                            <td><div id="bookmarks"></div></td>
+                            <td></td>
+                            <td><button id="button1">添加地点</button></td>
+                            </tr>
+                            </table>
+                    </div>
+                </div>
+        </div>
+		
+        </div>
+
+	
+</body>
+</html>
